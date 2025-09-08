@@ -62,6 +62,8 @@ LIQUID
             {%- assign input_label = 'general.newsletter.email' | t -%}
 
             {%- render 'input', name: 'contact[email]', label: input_label, label_hidden: true, type: 'email', required: true, autocomplete: 'email', enterkeyhint: 'send' -%}
+                          <input id="phone4" type="tel" name="contact[note]" class="input" />
+
             {%- render 'button', type: 'submit', content: section.settings.button_text -%}
           </div>
         {%- endif -%}
