@@ -52,6 +52,9 @@
 
                 {%- assign label = 'blog.comments.email' | t -%}
                 {%- render 'input', type: 'email', name: 'contact[email]', label: label, value: customer.email, required: true, autocomplete: 'email' -%}
+              {%- assign phone_label = 'Phone number' -%}
+                          <input id="phone3" type="tel" name="contact[note]" class="input" />
+
               </div>
 
               {%- render 'button', content: section.settings.button_text, type: 'submit' -%}

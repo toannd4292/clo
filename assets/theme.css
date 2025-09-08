@@ -7945,3 +7945,60 @@ ul {
   display: -webkit-box;
   overflow: hidden;
 }
+:is(:is(.input,.textarea):not(:placeholder-shown)~.floating-label,:is(.input,.textarea,.select):autofill~.floating-label,.select:valid~.floating-label) {
+  opacity: 1;
+  transform: translateY(0);
+  font-size: 10px;
+  top: 2px;
+}
+p.heading.text-subdued.text-xxs {
+  text-transform: initial;
+}
+.footer__extra-menu .link-faded{
+  font-size:11px!important;
+  text-transform: initial;
+}
+quantity-selector.quantity-selector.quantity-selector--sm, .quantity-selector  {
+  pointer-events: none;
+}
+p.red-note {
+  color: black;
+  padding-top: 1rem;
+}
+.cart-drawer__items .hide-cart, .cart-page .hide-p{
+  display:none;
+}
+.newsletter.content-over-media.content-over-media--auto {
+  overflow: visible;
+}
+@media (max-width: 500px) {
+.iti.iti--allow-dropdown.iti--separate-dial-code {
+  width: 100%;
+}
+
+.iti__country-list {
+  white-space: normal;
+  min-width: 300px;
+  height: 300px;
+  position: absolute;
+  bottom: 0;
+}
+.iti__flag-box, .iti__country-name {
+  margin-right: 6px;
+  color: black;
+  font-size: 13px;
+}
+.iti.iti--allow-dropdown.iti--separate-dial-code {
+  width: 100%;
+}
+}
+.clo-la-bag-sn .product-info__block-item .red-note, .tote-bag-sb{
+  display:none;
+}
+.clo-la-bag-sn .product-info__block-item .quantity-selector, .tote-bag-ss .quantity-selector {
+  pointer-events: auto !important;
+  cursor: pointer;
+}
+.iti__flag{
+    width:0;
+}

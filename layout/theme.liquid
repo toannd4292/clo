@@ -4,6 +4,9 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, height=device-height, minimum-scale=1.0, maximum-scale=5.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js"></script>
 
     <title>{% if page_title == blank %}{{ shop.name }}{% else %}{{ page_title }}{% if current_page != 1 %} &ndash; {{ 'general.page' | t: page: current_page }}{% endif %}{% endif %}</title>
 
@@ -69,7 +72,10 @@
     endif
   %}
 
-  <body class="{{ features_class }} color-scheme color-scheme--{{ settings.default_color_scheme.id }}">
+  <body class="{{ features_class }} color-scheme color-scheme--{{ settings.default_color_scheme.id }} 
+{% if template contains 'product'  %}
+{{ product.handle  }}-sn
+{% endif %}">
     {%- render 'shadow-dom-templates' -%}
 
     <loading-bar class="loading-bar" aria-hidden="true"></loading-bar>
@@ -99,5 +105,191 @@
         {%- sections 'footer-group' -%}
       {%- endif -%}
     </main>
+<script>
+(function(){
+  const msg = "Only one at a time. She's that special";
+  const BLOCK = 422;
+  const EXCLUDED_PRODUCTS = ['clo-la-bag'];
+  
+  async function getCartItems(){
+    try {
+      const c = await fetch("/cart.js").then(r => r.json());
+      return c.items || [];
+    } catch(e) {
+      return [];
+    }
+  }
+  
+  const _fetch = window.fetch;
+  
+  window.fetch = async function(i, o){
+    const u = (typeof i === "string" ? i : i.url) || "";
+    
+    if (u.includes("/cart/add")){
+      let variantId = null;
+      
+      if (o && o.body) {
+        const body = o.body;
+        
+        if (typeof body === "string") {
+          if (body.includes("id=")) {
+            const match = body.match(/id=(\d+)/);
+            variantId = match ? match[1] : null;
+          } else {
+            try {
+              const parsed = JSON.parse(body);
+              variantId = parsed.id || parsed.variant_id;
+            } catch(e) {}
+          }
+        } else if (body instanceof FormData) {
+          variantId = body.get('id');
+        }
+      }
+      
+      if (!variantId && u.includes("id=")) {
+        const match = u.match(/id=(\d+)/);
+        variantId = match ? match[1] : null;
+      }
+      
+      if (variantId) {
+        const cartItems = await getCartItems();
+        let productToAdd = null;
+        
+        try {
+          const variantResponse = await fetch(`/products.json`);
+          const productsData = await variantResponse.json();
+          
+          for (let product of productsData.products) {
+            const variant = product.variants.find(v => v.id.toString() === variantId.toString());
+            if (variant) {
+              productToAdd = product;
+              break;
+            }
+          }
+        } catch(e) {}
+        
+        if (productToAdd && EXCLUDED_PRODUCTS.includes(productToAdd.handle)) {
+          return _fetch.apply(this, arguments);
+        }
+        
+        if (productToAdd) {
+          const existingItem = cartItems.find(item => {
+            const itemProductId = item.product_id;
+            return itemProductId.toString() === productToAdd.id.toString();
+          });
+          
+          if (existingItem) {
+            setTimeout(() => {
+              const buyButtons = document.querySelector('buy-buttons');
+              if (buyButtons) {
+                const existingBanner = buyButtons.querySelector('.banner--error');
+                if (existingBanner) {
+                  existingBanner.remove();
+                }
+                
+                const bannerElement = document.createRange().createContextualFragment(`
+                  <div class="banner banner--error" role="alert">
+                    ${msg}
+                  </div>
+                `).firstElementChild;
+                
+                buyButtons.prepend(bannerElement);
+                setTimeout(() => {
+                  bannerElement.remove();
+                }, 2500);
+              }
+            }, 50);
+            
+            return new Response(
+              JSON.stringify({
+                description: msg,
+                status: "error"
+              }),
+              {
+                status: BLOCK,
+                statusText: "Blocked",
+                headers: { 'Content-Type': 'application/json' }
+              }
+            );
+          }
+        }
+      }
+    }
+    
+    return _fetch.apply(this, arguments);
+  };
+})();
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  function initIntlTel(input){
+    if (!input || input.dataset.iti === "1") return;
+    input.dataset.iti = "1";
+
+    var originalName = input.getAttribute("name");
+    var opts = {
+      separateDialCode: true,
+      initialCountry: "se",
+      preferredCountries: ["se"],
+      formatOnDisplay: true,
+      dropdownContainer: document.body,
+      utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js"
+    };
+
+    if (originalName) {
+      opts.hiddenInput = originalName;
+      input.removeAttribute("name");
+    }
+
+    var iti = window.intlTelInput(input, opts);
+
+    input.addEventListener("open:countrydropdown", function() {
+      document.body.style.overflow = "hidden";
+      document.body.dataset.itiLocked = "1";
+    });
+    input.addEventListener("close:countrydropdown", function() {
+      if (document.body.dataset.itiLocked) {
+        document.body.style.overflow = "";
+        delete document.body.dataset.itiLocked;
+      }
+    });
+
+    if (input.form) {
+      input.form.addEventListener("submit", function() {
+        if (!originalName) input.value = iti.getNumber();
+      });
+    }
+  }
+
+  document.querySelectorAll("input[id^='phone']").forEach(initIntlTel);
+
+  document.querySelectorAll("slideshow-carousel").forEach(function(carousel) {
+    carousel.addEventListener("slideChange", function() {
+      carousel.querySelectorAll("input[id^='phone']").forEach(initIntlTel);
+    });
+  });
+
+  const mo = new MutationObserver(function(muts){
+    muts.forEach(function(m){
+      m.addedNodes.forEach(function(node){
+        if (node.nodeType !== 1) return;
+        if (node.matches && node.matches("input[id^='phone']")) initIntlTel(node);
+        if (node.querySelectorAll) node.querySelectorAll("input[id^='phone']").forEach(initIntlTel);
+      });
+    });
+  });
+  mo.observe(document.documentElement, {childList:true, subtree:true});
+});
+</script>
+
+
+<style>
+  .iti__flag-box, .iti__country-name {
+    margin-right: 6px;
+    color: black;
+}
+</style>
+
   </body>
 </html>
